@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content_js %}
+    <script type="text/javascript" src="{{ url_for('static', filename='js/presence_weekday.js') }}"></script>
+{% endblock %}
+{% block content_title %}
+Presence by weekday
+{% endblock %}
+{% set header_title = 'Presence by weekday' %}

@@ -4,7 +4,8 @@ Defines views.
 """
 
 import calendar
-from flask import redirect, abort
+import jinja2
+from flask import abort, redirect, render_template, url_for
 
 from presence_analyzer.main import app
 from presence_analyzer.utils import (
@@ -21,7 +22,18 @@ def mainpage():
     """
     Redirects to front page.
     """
-    return redirect('/static/presence_weekday.html')
+    return redirect(url_for('render_by_name', name='presence_weekday'))
+
+
+@app.route('/<string:name>')
+def render_by_name(name):
+    """
+    Renders template that matches given name.
+    """
+    try:
+        return render_template('{0}.html'.format(name))
+    except jinja2.exceptions.TemplateNotFound:
+        abort(404)
 
 
 @app.route('/api/v1/users', methods=['GET'])

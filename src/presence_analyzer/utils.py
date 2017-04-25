@@ -107,7 +107,7 @@ def mean(items):
 def group_by_weekday_start_end(items):
     """
     Groups start time and end time by weekday.
-    
+
     It creates structure like this:
     result = [
         {

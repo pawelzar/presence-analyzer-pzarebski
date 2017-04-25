@@ -1,8 +1,12 @@
-{% extends "base.html" %}
-{% block content_js %}
-    <script type="text/javascript" src="{{ url_for('static', filename='js/presence_weekday.js') }}"></script>
-{% endblock %}
-{% block content_title %}
-Presence by weekday
-{% endblock %}
-{% set header_title = 'Presence by weekday' %}
+<%inherit file="base.html"/>
+<%block name="content_js">
+    <script type="text/javascript" src="${url_for('static', filename='js/presence_weekday.js')}"></script>
+</%block>
+<%block name="content_title">
+    Presence by weekday
+</%block>
+<%def name="header()">
+    <%
+        return 'Presence by weekday'
+    %>
+</%def>

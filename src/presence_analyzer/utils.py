@@ -8,6 +8,8 @@ from json import dumps
 from functools import wraps
 from datetime import datetime
 
+from xml.etree import ElementTree
+
 from flask import Response
 
 from presence_analyzer.main import app
@@ -69,6 +71,26 @@ def get_data():
             data.setdefault(user_id, {})[date] = {'start': start, 'end': end}
 
     return data
+
+
+def get_data_xml():
+    """
+    Extracts users data from XML file and groups it by user_id.
+    """
+    data = ElementTree.parse(app.config['DATA_XML'])
+    server = data.find('server')
+    link = '{}://{}:{}'.format(
+        server.find('protocol').text,
+        server.find('host').text,
+        server.find('port').text,
+    )
+    users = {}
+    for user in data.find('users'):
+        users[int(user.get('id'))] = {
+            'name': user.find('name').text,
+            'avatar': '{}{}'.format(link, user.find('avatar').text),
+        }
+    return users
 
 
 def group_by_weekday(items):

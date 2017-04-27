@@ -9,10 +9,14 @@ import json
 import datetime
 import unittest
 
-from presence_analyzer import main, views, utils
+from presence_analyzer import main, utils
 
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
+)
+
+TEST_DATA_XML = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_users.xml'
 )
 
 
@@ -27,6 +31,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         Before each test, set up a environment.
         """
         main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
+        main.app.config.update({'DATA_XML': TEST_DATA_XML})
         self.client = main.app.test_client()
 
     def tearDown(self):
@@ -43,6 +48,16 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 302)
         assert resp.headers['Location'].endswith('/presence_weekday')
 
+    def test_render_by_name(self):
+        """
+        Test rendering template for given template name.
+        """
+        resp = self.client.get('/presence_weekday')
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client.get('/wrong_template')
+        self.assertEqual(resp.status_code, 404)
+
     def test_api_users(self):
         """
         Test users listing.
@@ -52,7 +67,12 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.content_type, 'application/json')
         data = json.loads(resp.data)
         self.assertEqual(len(data), 2)
-        self.assertDictEqual(data[0], {'user_id': 10, 'name': 'User 10'})
+        user = {
+            'user_id': 10,
+            'name': 'John Doe',
+            'avatar': 'https://intranet.stxnext.pl:1234/api/images/users/10',
+        }
+        self.assertDictEqual(data[0], user)
 
     def test_mean_time_weekday(self):
         """
@@ -136,6 +156,46 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ]
         )
 
+    def test_presence_start_end(self):
+        """
+        Test mean start time and mean end time for given user.
+        """
+        resp = self.client.get('/api/v1/presence_start_end/0')
+        self.assertEqual(resp.status_code, 404)
+
+        resp = self.client.get('/api/v1/presence_start_end/10')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+
+        data = json.loads(resp.data)
+        self.assertEqual(
+            data,
+            [
+                ['Mon', 0, 0],
+                ['Tue', 34745, 64792],
+                ['Wed', 33592, 58057],
+                ['Thu', 38926, 62631],
+                ['Fri', 0, 0],
+                ['Sat', 0, 0],
+                ['Sun', 0, 0],
+            ]
+        )
+
+        resp = self.client.get('/api/v1/presence_start_end/11')
+        data = json.loads(resp.data)
+        self.assertEqual(
+            data,
+            [
+                ['Mon', 33134, 57257],
+                ['Tue', 33590, 50154],
+                ['Wed', 33206, 58527],
+                ['Thu', 35602, 58586],
+                ['Fri', 47816, 54242],
+                ['Sat', 0, 0],
+                ['Sun', 0, 0],
+            ]
+        )
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -147,6 +207,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         Before each test, set up a environment.
         """
         main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
+        main.app.config.update({'DATA_XML': TEST_DATA_XML})
 
     def tearDown(self):
         """
@@ -169,11 +230,19 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
             datetime.time(9, 39, 5)
         )
 
+    def test_get_data_xml(self):
+        """
+        Test parsing of XML file.
+        """
+        data = utils.get_data_xml()
+        self.assertIsInstance(data, dict)
+        self.assertItemsEqual(data.keys(), [10, 12])
+        self.assertEqual(data[10]['name'], 'John Doe')
+
     def test_group_by_weekday(self):
         """
         Test grouping presences by weekday.
         """
-
         test_data = {
             datetime.date(2017, 4, 18): {
                 'start': datetime.time(8, 15, 0),
@@ -209,6 +278,33 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
             [[24123], [16564], [25321], [22969, 22999], [6426], [], []],
             utils.group_by_weekday(data[11])
         )
+
+    def test_group_by_weekday_start_end(self):
+        """
+        Test grouping presences by weekday with start and end time.
+        """
+        data = utils.get_data()
+        result = [
+            {},
+            {'start': [34745], 'end': [64792]},
+            {'start': [33592], 'end': [58057]},
+            {'start': [38926], 'end': [62631]},
+            {},
+            {},
+            {},
+        ]
+        self.assertEqual(result, utils.group_by_weekday_start_end(data[10]))
+
+        result = [
+            {'start': [33134], 'end': [57257]},
+            {'start': [33590], 'end': [50154]},
+            {'start': [33206], 'end': [58527]},
+            {'start': [37116, 34088], 'end': [60085, 57087]},
+            {'start': [47816], 'end': [54242]},
+            {},
+            {},
+        ]
+        self.assertEqual(result, utils.group_by_weekday_start_end(data[11]))
 
     def test_seconds_since_midnight(self):
         """

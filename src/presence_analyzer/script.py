@@ -4,7 +4,10 @@
 
 import os
 import sys
+import urllib
 from functools import partial
+
+from presence_analyzer import main
 
 import paste.script.command
 import werkzeug.script
@@ -111,3 +114,13 @@ def run():
         _serve('stop', dry_run=dry_run)
 
     werkzeug.script.run()
+
+
+def retrieve_users():
+    """Downloads XML file with users data."""
+    main.app.config.from_pyfile(abspath(DEPLOY_CFG))
+    url = main.app.config['URL_XML']
+    file_name = os.path.join(
+        os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'users.xml'
+    )
+    urllib.urlretrieve(url, file_name)

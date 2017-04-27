@@ -9,7 +9,7 @@ from flask_mako import exceptions, render_template
 
 from presence_analyzer.main import app
 from presence_analyzer.utils import (
-    jsonify, get_data, mean,
+    jsonify, get_data, get_data_xml, mean,
     group_by_weekday, group_by_weekday_start_end,
 )
 
@@ -31,7 +31,7 @@ def render_by_name(name):
     Renders template that matches given name.
     """
     try:
-        return render_template('{0}.html'.format(name))
+        return render_template('{}.html'.format(name))
     except exceptions.TopLevelLookupException:
         abort(404)
 
@@ -42,10 +42,14 @@ def users_view():
     """
     Users listing for dropdown.
     """
-    data = get_data()
+    data = get_data_xml()
     return [
-        {'user_id': i, 'name': 'User {0}'.format(str(i))}
-        for i in data.keys()
+        {
+            'user_id': i,
+            'name': user.get('name'),
+            'avatar': user.get('avatar'),
+        }
+        for i, user in data.items()
     ]
 
 

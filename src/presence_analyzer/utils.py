@@ -4,9 +4,10 @@ Helper functions used in views.
 """
 
 import csv
+import threading
 from json import dumps
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from xml.etree import ElementTree
 
@@ -18,22 +19,53 @@ import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-def jsonify(function):
+def jsonify(func):
     """
     Creates a response with the JSON representation of wrapped function result.
     """
-    @wraps(function)
+    @wraps(func)
     def inner(*args, **kwargs):
         """
         This docstring will be overridden by @wraps decorator.
         """
         return Response(
-            dumps(function(*args, **kwargs)),
+            dumps(func(*args, **kwargs)),
             mimetype='application/json'
         )
     return inner
 
 
+def cache(time):
+    """
+    Stores function output data for given time in seconds.
+    """
+    cache.data = {}
+    lock = threading.Lock()
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            """
+            This docstring will be overridden by @wraps decorator.
+            """
+            now = datetime.now()
+            name = func.__name__
+            with lock:
+                if name in cache.data and \
+                   now - cache.data[name]['time'] < timedelta(seconds=time):
+                    result = cache.data[name]['data']
+                else:
+                    result = func(*args, **kwargs)
+                    cache.data[name] = {
+                        'data': result,
+                        'time': now,
+                    }
+            return result
+        return wrapper
+    return decorator
+
+
+@cache(600)
 def get_data():
     """
     Extracts presence data from CSV file and groups it by user_id.
@@ -65,10 +97,12 @@ def get_data():
                 date = datetime.strptime(row[1], '%Y-%m-%d').date()
                 start = datetime.strptime(row[2], '%H:%M:%S').time()
                 end = datetime.strptime(row[3], '%H:%M:%S').time()
+                data.setdefault(user_id, {})[date] = {
+                    'start': start,
+                    'end': end,
+                }
             except (ValueError, TypeError):
                 log.debug('Problem with line %d: ', i, exc_info=True)
-
-            data.setdefault(user_id, {})[date] = {'start': start, 'end': end}
 
     return data
 
@@ -97,7 +131,7 @@ def group_by_weekday(items):
     """
     Groups presence entries by weekday.
     """
-    result = [[] for i in range(7)]  # one list for every day in week
+    result = [[] for _ in range(7)]  # one list for every day in week
     for date in items:
         start = items[date]['start']
         end = items[date]['end']
@@ -114,7 +148,7 @@ def seconds_since_midnight(time):
 
 def interval(start, end):
     """
-    Calculates inverval in seconds between two datetime.time objects.
+    Calculates interval in seconds between two datetime.time objects.
     """
     return seconds_since_midnight(end) - seconds_since_midnight(start)
 
@@ -142,7 +176,7 @@ def group_by_weekday_start_end(items):
         }
     ]
     """
-    result = [{} for i in range(7)]  # one dict for every day in week
+    result = [{} for _ in range(7)]  # one dict for every day in week
     for date in items:
         start = items[date]['start']
         end = items[date]['end']

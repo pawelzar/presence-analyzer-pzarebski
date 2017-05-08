@@ -347,6 +347,32 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         self.assertEqual(1.0, utils.mean([0, 2]))
         self.assertEqual(0, utils.mean([]))
 
+    def test_cache(self):
+        """
+        Test caching data for given time.
+        """
+        def func():
+            """
+            Returns empty list. Just for testing purposes.
+            """
+            return []
+
+        utils.cache.data.clear()
+        data_1 = func()
+        data_2 = func()
+        self.assertIsNot(data_1, data_2)
+
+        wrapped_func = utils.cache(5)(func)
+        wrapped_data_1 = wrapped_func()
+        wrapped_data_2 = wrapped_func()
+        self.assertIs(wrapped_data_1, wrapped_data_2)
+
+        wrapped_func = utils.cache(0)(func)
+        wrapped_data_1 = wrapped_func()
+        wrapped_data_2 = wrapped_func()
+        self.assertIsNot(wrapped_data_1, wrapped_data_2)
+        utils.cache.data.clear()
+
 
 def suite():
     """

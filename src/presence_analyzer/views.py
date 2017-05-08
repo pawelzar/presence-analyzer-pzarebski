@@ -9,8 +9,12 @@ from flask_mako import exceptions, render_template
 
 from presence_analyzer.main import app
 from presence_analyzer.utils import (
-    jsonify, get_data, get_data_xml, mean,
-    group_by_weekday, group_by_weekday_start_end,
+    get_data,
+    get_data_xml,
+    group_by_weekday,
+    group_by_weekday_start_end,
+    jsonify,
+    mean,
 )
 
 import logging

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <intranet>
     <server>
         <host>intranet.stxnext.pl</host>
@@ -13,6 +13,10 @@
         <user id="12">
             <avatar>/api/images/users/12</avatar>
             <name>Rambo J.</name>
+        </user>
+        <user id="15">
+            <avatar>/api/images/users/15</avatar>
+            <name>Overtime Master</name>
         </user>
     </users>
 </intranet>

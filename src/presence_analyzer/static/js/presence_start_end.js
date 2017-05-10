@@ -57,6 +57,10 @@ $.getScript("static/js/parse.js");
                     loading.hide();
                 });
             }
+            else {
+                user_avatar.hide();
+                chart_div.hide();
+            }
         });
     });
 })(jQuery);

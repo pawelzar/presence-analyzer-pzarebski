@@ -133,7 +133,7 @@ def quarters_view():
     """
     data = get_data()
     quarters = group_quarters(data)
-    return [
+    return sorted([
         {
             'quarter_id': i,
             'name': '{} quarter of {}'.format(
@@ -142,7 +142,7 @@ def quarters_view():
             ),
         }
         for i, quarter in quarters.items()
-    ]
+    ], key=lambda x: x.get('quarter_id'), reverse=True)
 
 
 @app.route('/api/v1/overtime_in_quarter/<int:quarter_id>', methods=['GET'])

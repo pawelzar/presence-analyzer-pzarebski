@@ -19,6 +19,7 @@ $.getScript("static/js/parse.js");
             var selected_user = $("#user_id").val(),
                 chart_div = $('#chart_div'),
                 user_avatar = $('#user_avatar');
+            user_avatar.width($("#user_id").width());
             if(selected_user) {
                 loading.show();
                 chart_div.hide();

@@ -20,7 +20,7 @@ google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
             if(selected_user) {
                 loading.show();
                 chart_div.hide();
-                user_avatar.hide()
+                user_avatar.hide();
                 $.getJSON("/api/v1/presence_weekday/"+selected_user, function(result){
                 })
                 .success(function(result){
@@ -36,7 +36,7 @@ google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
                 .error(function(result){
                     $("#avatar_img").attr("src", avatar[selected_user]);
                     user_avatar.show();
-                    chart_div.empty()
+                    chart_div.empty();
                     chart_div.append("<p>No data.</p>");
                     chart_div.show();
                     loading.hide();

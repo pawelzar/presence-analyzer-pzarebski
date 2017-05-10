@@ -7,7 +7,7 @@ import csv
 import threading
 from json import dumps
 from functools import wraps
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from xml.etree import ElementTree
 
@@ -107,6 +107,7 @@ def get_data():
     return data
 
 
+@cache(600)
 def get_data_xml():
     """
     Extracts users data from XML file and groups it by user_id.
@@ -187,3 +188,67 @@ def group_by_weekday_start_end(items):
             seconds_since_midnight(end)
         )
     return result
+
+
+def group_quarters(items):
+    """
+    Returns quarters sorted by year and numeral.
+    """
+    quarters = set()
+    for user in items:
+        for date in items[user]:
+            quarter = date.month // 4 + 1
+            quarters.add((date.year, quarter))
+
+    result = {}
+    for i, quarter in enumerate(sorted(quarters)):
+        result[i] = {
+            'year': quarter[0],
+            'numeral': quarter[1],
+        }
+    return result
+
+
+def overtime_hours_in_quarter(items, quarter):
+    """
+    Returns overtime hours for every user in given quarter.
+    """
+    quarter_num = quarter['numeral']
+    year = quarter['year']
+    seconds_in_hour = 3600
+    working_hours = 8 * working_days_in_quarter(year, quarter_num)
+
+    overtime = {user: 0 for user in items.keys()}
+    for user, date in items.items():
+        for date_key, entry in date.items():
+            if date_in_quarter(date_key, year, quarter_num):
+                overtime[user] += interval(entry['start'], entry['end'])
+        overtime[user] /= seconds_in_hour
+        overtime[user] -= working_hours
+    return overtime
+
+
+def working_days_in_quarter(year, quarter):
+    """
+    Returns working days for given quarter and year.
+    """
+    working_days = 0
+    start_month = (quarter - 1) * 3 + 1
+    start_date = date(year, start_month, 1)
+    if quarter == 4:
+        end_date = date(year + 1, 1, 1)
+    else:
+        end_date = date(year, start_month + 3, 1)
+
+    day_count = (end_date - start_date).days
+    for day in (start_date + timedelta(days=i) for i in range(day_count)):
+        if day.weekday() < 5:
+            working_days += 1
+    return working_days
+
+
+def date_in_quarter(date, year, quarter):
+    """
+    Checks if given date belongs to given quarter of given year.
+    """
+    return date.month // 4 + 1 == quarter and date.year == year

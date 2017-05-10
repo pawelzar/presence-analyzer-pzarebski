@@ -28,7 +28,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
 
     def setUp(self):
         """
-        Before each test, set up a environment.
+        Before each test, set up an environment.
         """
         main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
         main.app.config.update({'DATA_XML': TEST_DATA_XML})
@@ -66,7 +66,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content_type, 'application/json')
         data = json.loads(resp.data)
-        self.assertEqual(len(data), 2)
+        self.assertEqual(len(data), 3)
         user = {
             'user_id': 10,
             'name': 'John Doe',
@@ -196,6 +196,43 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ]
         )
 
+    def test_quarters(self):
+        """
+        Test quarters listing.
+        """
+        resp = self.client.get('/api/v1/quarters')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+
+        data = json.loads(resp.data)
+        self.assertEqual(
+            data,
+            [{'quarter_id': 0, 'name': '3 quarter of 2013'}],
+        )
+
+    def test_overtime_in_quarter(self):
+        """
+        Test counting overtime hours in quarter.
+        """
+        resp = self.client.get('/api/v1/overtime_in_quarter/0')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+
+        data = json.loads(resp.data)
+        result = [
+            [{
+                'name': 'Overtime Master',
+                'avatar': 'https://intranet.stxnext.pl:1234/api/images/users/15',
+            }, 176],
+            [{
+                'name': 'User 14',
+            }, 132],
+            [{
+                'name': 'User 25',
+            }, 22],
+        ]
+        self.assertEqual(data, result)
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -204,7 +241,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
 
     def setUp(self):
         """
-        Before each test, set up a environment.
+        Before each test, set up an environment.
         """
         main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
         main.app.config.update({'DATA_XML': TEST_DATA_XML})
@@ -221,7 +258,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         """
         data = utils.get_data()
         self.assertIsInstance(data, dict)
-        self.assertItemsEqual(data.keys(), [10, 11])
+        self.assertItemsEqual(data.keys(), [10, 11, 14, 15, 25])
         sample_date = datetime.date(2013, 9, 10)
         self.assertIn(sample_date, data[10])
         self.assertItemsEqual(data[10][sample_date].keys(), ['start', 'end'])
@@ -236,7 +273,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         """
         data = utils.get_data_xml()
         self.assertIsInstance(data, dict)
-        self.assertItemsEqual(data.keys(), [10, 12])
+        self.assertItemsEqual(data.keys(), [10, 12, 15])
         self.assertEqual(data[10]['name'], 'John Doe')
 
     def test_group_by_weekday(self):
@@ -372,6 +409,60 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         wrapped_data_2 = wrapped_func()
         self.assertIsNot(wrapped_data_1, wrapped_data_2)
         utils.cache.data.clear()
+
+    def test_group_quarters(self):
+        """
+        Test grouping quarters by year and numeral.
+        """
+        data = utils.get_data()
+        result = {
+            0: {
+                'numeral': 3,
+                'year': 2013,
+            }
+        }
+        self.assertEqual(result, utils.group_quarters(data))
+
+    def test_overtime_hours_in_quarter(self):
+        """
+        Test calculation of overtime hours for every user in given quarter.
+        """
+        data = utils.get_data()
+        quarter = utils.group_quarters(data)[0]
+        hours = {
+            10: -507,
+            11: -496,
+            14: 132,
+            15: 176,
+            25: 22,
+        }
+        self.assertEqual(hours, utils.overtime_hours_in_quarter(data, quarter))
+
+    def test_working_days_in_quarter(self):
+        """
+        Test calculation of working days for given quarter and year.
+        """
+        self.assertEqual(65, utils.working_days_in_quarter(2016, 1))
+        self.assertEqual(65, utils.working_days_in_quarter(2016, 2))
+        self.assertEqual(66, utils.working_days_in_quarter(2016, 3))
+        self.assertEqual(65, utils.working_days_in_quarter(2016, 4))
+
+        self.assertEqual(65, utils.working_days_in_quarter(2018, 1))
+        self.assertEqual(65, utils.working_days_in_quarter(2018, 2))
+        self.assertEqual(65, utils.working_days_in_quarter(2018, 3))
+        self.assertEqual(66, utils.working_days_in_quarter(2018, 4))
+
+    def test_date_in_quarter(self):
+        """
+        Test checking if date belongs to given quarter.
+        """
+        test_date = datetime.date(2013, 2, 23)
+        self.assertTrue(utils.date_in_quarter(test_date, 2013, 1))
+        self.assertFalse(utils.date_in_quarter(test_date, 2013, 2))
+        self.assertFalse(utils.date_in_quarter(test_date, 2014, 1))
+
+        test_date = datetime.date(2013, 4, 1)
+        self.assertFalse(utils.date_in_quarter(test_date, 2013, 1))
 
 
 def suite():

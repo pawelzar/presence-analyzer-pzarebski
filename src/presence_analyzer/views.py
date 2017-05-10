@@ -13,8 +13,10 @@ from presence_analyzer.utils import (
     get_data_xml,
     group_by_weekday,
     group_by_weekday_start_end,
+    group_quarters,
     jsonify,
     mean,
+    overtime_hours_in_quarter,
 )
 
 import logging
@@ -121,3 +123,46 @@ def presence_start_end_view(user_id):
     ]
 
     return result
+
+
+@app.route('/api/v1/quarters', methods=['GET'])
+@jsonify
+def quarters_view():
+    """
+    Quarters listing for dropdown.
+    """
+    data = get_data()
+    quarters = group_quarters(data)
+    return [
+        {
+            'quarter_id': i,
+            'name': '{} quarter of {}'.format(
+                quarter['numeral'],
+                quarter['year'],
+            ),
+        }
+        for i, quarter in quarters.items()
+    ]
+
+
+@app.route('/api/v1/overtime_in_quarter/<int:quarter_id>', methods=['GET'])
+@jsonify
+def overtime_in_quarter(quarter_id):
+    """
+    Returns top 3 users with most overtime hours in given quarter.
+    """
+    data = get_data()
+    users = get_data_xml()
+    quarters = group_quarters(data)
+    result = overtime_hours_in_quarter(data, quarters[quarter_id])
+    return sorted(
+        [
+            (
+                users.get(user_id, {'name': 'User {}'.format(user_id)}),
+                hours,
+            )
+            for user_id, hours in result.items() if hours > 0
+        ],
+        key=lambda x: x[1],
+        reverse=True
+    )[:3]

@@ -1,0 +1,15 @@
+<%inherit file="base.html"/>
+<%block name="content_js">
+    <script type="text/javascript" src="${url_for('static', filename='js/overtime_in_quarter.js')}"></script>
+</%block>
+<%block name="content_title">
+    Top 3 overtime hours in quarter
+</%block>
+<%block name="dropdown_id">
+    quarter_id
+</%block>
+<%def name="header()">
+    <%
+        return 'Overtime in quarter'
+    %>
+</%def>

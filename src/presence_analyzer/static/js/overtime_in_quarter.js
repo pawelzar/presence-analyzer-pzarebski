@@ -40,6 +40,9 @@ google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
                     }
                 });
             }
+            else {
+                chart_div.hide();
+            }
         });
     });
 })(jQuery);

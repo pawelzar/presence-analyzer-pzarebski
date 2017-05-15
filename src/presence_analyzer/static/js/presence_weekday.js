@@ -42,6 +42,10 @@ google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
                     loading.hide();
                 });
             }
+            else {
+                user_avatar.hide();
+                chart_div.hide();
+            }
         });
     });
 })(jQuery);

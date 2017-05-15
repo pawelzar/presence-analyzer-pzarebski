@@ -4,6 +4,8 @@ Defines views.
 """
 
 import calendar
+import locale
+
 from flask import abort, redirect, url_for
 from flask_mako import exceptions, render_template
 
@@ -48,15 +50,16 @@ def users_view():
     """
     Users listing for dropdown.
     """
+    locale.setlocale(locale.LC_COLLATE, "pl_PL.UTF-8")
     data = get_data_xml()
-    return [
+    return sorted([
         {
             'user_id': i,
             'name': user.get('name'),
             'avatar': user.get('avatar'),
         }
         for i, user in data.items()
-    ]
+    ], key=lambda x: x.get('name'), cmp=locale.strcoll)
 
 
 @app.route('/api/v1/mean_time_weekday/<int:user_id>', methods=['GET'])
